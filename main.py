@@ -1,7 +1,8 @@
 import asyncio
 import logging
+import os
 
-from aiogram import Bot, Dispatcher, F
+from aiogram import Bot, Dispatcher
 from aiogram.filters import CommandStart
 from aiogram.types import (
     Message,
@@ -9,15 +10,29 @@ from aiogram.types import (
     ReplyKeyboardMarkup,
     WebAppInfo,
 )
+from fastapi import FastAPI
+import uvicorn
 
-TOKEN = "8801313308:AAG1pDo4iXHj78iNGHuNsCv87hUGH3dpURI"
+
+# =========================
+# SOZLAMALAR
+# =========================
+
+TOKEN = "8801313308:AAGessGbwgmBdHHQFrEBuauE0_gJGHE1q6o"
 
 WEBAPP_URL = "https://rashbaholash.rf.gd/taker.html"
 
 # Premium emoji ID'lari
 SALOM_EMOJI = "5891184096192763888"
 
-# /start uchun keyboard
+
+# =========================
+# BOT
+# =========================
+
+dp = Dispatcher()
+
+
 def main_keyboard():
     return ReplyKeyboardMarkup(
         keyboard=[
@@ -31,9 +46,6 @@ def main_keyboard():
         ],
         resize_keyboard=True,
     )
-
-
-dp = Dispatcher()
 
 
 @dp.message(CommandStart())
@@ -50,51 +62,57 @@ async def start_handler(message: Message):
     )
 
 
-async def main():
-    logging.basicConfig(level=logging.INFO)
-
-    bot = Bot(token=TOKEN)
-
-    await dp.start_polling(bot)
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
-
-import asyncio
-import os
-
-from aiogram import Bot, Dispatcher
-from fastapi import FastAPI
-import uvicorn
-
-TOKEN = "8801313308:AAG1pDo4iXHj78iNGHuNsCv87hUGH3dpURI"
-
-bot = Bot(TOKEN)
-dp = Dispatcher()
+# =========================
+# FASTAPI
+# =========================
 
 app = FastAPI()
 
 
 @app.get("/")
-async def root():
-    return {"status": "ok"}
+async def home():
+    return {"status": "ok", "bot": "running"}
 
+
+@app.get("/health")
+async def health():
+    return {"status": "healthy"}
+
+
+# =========================
+# BOT POLLING
+# =========================
 
 async def start_bot():
-    await dp.start_polling(bot)
+    bot = Bot(token=TOKEN)
 
+    try:
+        await dp.start_polling(bot)
+    finally:
+        await bot.session.close()
+
+
+# =========================
+# MAIN
+# =========================
 
 async def main():
+    logging.basicConfig(level=logging.INFO)
+
+    port = int(os.environ.get("PORT", 10000))
+
+    server = uvicorn.Server(
+        uvicorn.Config(
+            app,
+            host="0.0.0.0",
+            port=port,
+            log_level="info",
+        )
+    )
+
     await asyncio.gather(
         start_bot(),
-        uvicorn.Server(
-            uvicorn.Config(
-                app,
-                host="0.0.0.0",
-                port=int(os.getenv("PORT", 10000)),
-            )
-        ).serve()
+        server.serve(),
     )
 
 
