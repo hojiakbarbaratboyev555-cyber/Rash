@@ -10,7 +10,7 @@ from aiogram.types import (
     WebAppInfo,
 )
 
-TOKEN = "8801313308:AAEhgLI2MfSIoLfiMFNLaajQdTKm5Yy9UI0"
+TOKEN = "8801313308:AAG1pDo4iXHj78iNGHuNsCv87hUGH3dpURI"
 
 WEBAPP_URL = "https://rashbaholash.rf.gd/taker.html"
 
@@ -56,6 +56,46 @@ async def main():
     bot = Bot(token=TOKEN)
 
     await dp.start_polling(bot)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+
+import asyncio
+import os
+
+from aiogram import Bot, Dispatcher
+from fastapi import FastAPI
+import uvicorn
+
+TOKEN = "8801313308:AAG1pDo4iXHj78iNGHuNsCv87hUGH3dpURI"
+
+bot = Bot(TOKEN)
+dp = Dispatcher()
+
+app = FastAPI()
+
+
+@app.get("/")
+async def root():
+    return {"status": "ok"}
+
+
+async def start_bot():
+    await dp.start_polling(bot)
+
+
+async def main():
+    await asyncio.gather(
+        start_bot(),
+        uvicorn.Server(
+            uvicorn.Config(
+                app,
+                host="0.0.0.0",
+                port=int(os.getenv("PORT", 10000)),
+            )
+        ).serve()
+    )
 
 
 if __name__ == "__main__":
